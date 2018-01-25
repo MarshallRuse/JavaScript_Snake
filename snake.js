@@ -1,57 +1,80 @@
 //Entities
 
 const ctx = document.querySelector("#canvas").getContext("2d");
-const unit = 32;
+
+
+var GameBoard = (() => {
+	const unit = 32;
+	const RIGHT_WALL = 17*unit;
+	const LEFT_WALL = 2*unit;
+	const BOTTOM_WALL = 17*unit;
+	const TOP_WALL = 4*unit;
+
+	/*
+	let foodItem = Food();
+	
+	const newFood = () => {
+		foodItem = Food();
+	}
+	*/
+	return {unit, RIGHT_WALL, LEFT_WALL, BOTTOM_WALL, TOP_WALL};
+})();
+
 
 var Snake = (() => {
-	let x = 10 * unit;
-	let y = 10 * unit;
+	let x = 10 * GameBoard.unit;
+	let y = 10 * GameBoard.unit;
 	let dir = "r";
 
 	let body = [];
 	body.unshift({x, y});
-	let head = body[0];
 
 	const moveRight = () => {
-		
-		let newX = head.x + unit;
-		let y = head.y;
-		body.unshift({newX, y});
+		x = body[0].x + GameBoard.unit;
+		body.unshift({x, y});
 		body.pop();
 	}
 
 	const moveLeft = () => {
+		x = body[0].x - GameBoard.unit;
+		body.unshift({x, y});
 		body.pop();
-		let newX = head.x - unit;
-		let y = head.y;
-		body.unshift({newX, y})
 	}
 
 	const moveUp = () => {
+		y = body[0].y - GameBoard.unit;
+		body.unshift({x, y});
 		body.pop();
-		let newY = head.y + unit;
-		let x = head.x
-		body.unshift({x, newY});
 	}
 
 	const moveDown = () => {
+		y = body[0].y + GameBoard.unit;
+		body.unshift({x, y});
 		body.pop();
-		let newY = head.y - unit;
-		let x = head.x;
-		body.unshift({x, newY});
 	}
+
+	const hasEaten = () => {
+		if (body[0].x == GameBoard.foodItem.x && body[0].y == GameBoard.foodItem.y){
+			return true;
+		}
+		else{
+			return false;
+		}
+	} 
 
 	const alive = () => {
 		return true;
 	}
 
-	return {body, dir, moveLeft, moveRight, moveDown, moveUp};
+	return {body, dir, moveLeft, moveRight, moveDown, moveUp, hasEaten};
 })();
 
 var Food = () => {
-	let x = Math.floor(Math.random() * (17 - 1) + 2) * unit;;
-	let y = Math.floor(Math.random() * (17 - 1) )* unit;
-}
+	let x = Math.floor(Math.random() * (17 - 1) + 2) * GameBoard.unit;;
+	let y = Math.floor(Math.random() * (17 - 1) )* GameBoard.unit;
+
+	return {x, y};
+};
 
 //Gameplay
 
@@ -93,16 +116,18 @@ var Display = (() => {
 	const draw = () => {
 
 		// the game board
-		ctx.rect(unit, unit, 19*unit, 19*unit);
+		ctx.rect(GameBoard.unit, GameBoard.unit, 19*GameBoard.unit, 19*GameBoard.unit);
 		ctx.stroke();
 		ctx.drawImage(bg, 0, 0);
 
 		//the snake
 		for (let i = 0; i < Snake.body.length; i++){
 			ctx.fillStyle = "white";
-			ctx.fillRect(Snake.body[i].x, Snake.body[i].y, unit, unit);
+			ctx.fillRect(Snake.body[i].x, Snake.body[i].y, GameBoard.unit, GameBoard.unit);
 		}
 		
+		ctx.fillStyle = "red";
+		ctx.fillRect(Food.x, Food.y, GameBoard.unit, GameBoard.unit);
 
 	}
 	
@@ -114,24 +139,28 @@ var GamePlay = (() => {
 
 	const update = () => {
 
-		if (Snake.dir == "l"){
+		if (Snake.dir == "l" && Snake.body[0].x >= GameBoard.LEFT_WALL){
 			Snake.moveLeft();
 		}
-		else if (Snake.dir == "u"){
+		else if (Snake.dir == "u" && Snake.body[0].y >= GameBoard.TOP_WALL){
 			Snake.moveUp();
 		}
-		else if (Snake.dir == "r"){
+		else if (Snake.dir == "r" && Snake.body[0].x <= GameBoard.RIGHT_WALL){
 			Snake.moveRight();
 		}
-		else if (Snake.dir == "d"){
+		else if (Snake.dir == "d" && Snake.body[0].y <= GameBoard.BOTTOM_WALL){
 			Snake.moveDown();
+		}
+
+		if (Snake.hasEaten()){
+			GameBoard.newFood();
 		}
 
 	}
 
 	let score = 0;
 	//update
-	setInterval(update, 1000);
+	setInterval(update, 150);
 	//render
 	setInterval(Display.draw, 100);
 	

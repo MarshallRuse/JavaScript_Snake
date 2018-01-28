@@ -6,7 +6,6 @@ const unit = 32;
 var Food = () => {
 	let x = Math.floor(Math.random() * (17 - 1) + 2) * unit;
 	let y = Math.floor(Math.random() * (17 - 1) + 3)* unit;
-	console.log("x is: " + x + ", y is: " + y);
 	return {x, y};
 };
 
@@ -21,7 +20,6 @@ var GameBoard = (() => {
 	
 	const newFood = () => {
 		foodItem = Food();
-		console.log(foodItem);
 	}
 
 	const getFood = () => {
@@ -36,37 +34,53 @@ var Snake = (() => {
 	let x = 10 * unit;
 	let y = 10 * unit;
 	let dir = "r";
+	let living = true;
 
 	let body = [];
 	body.unshift({x, y});
 
 	const moveRight = () => {
 		x = body[0].x + unit;
+		if (collision()){
+			dies();
+		}
 		body.unshift({x, y});
+		
 		body.pop();
 	}
 
 	const moveLeft = () => {
 		x = body[0].x - unit;
 		body.unshift({x, y});
+		if (collision()){
+			dies();
+		}
 		body.pop();
 	}
 
 	const moveUp = () => {
 		y = body[0].y - unit;
 		body.unshift({x, y});
+		if (collision()){
+			dies();
+		}
 		body.pop();
 	}
 
 	const moveDown = () => {
 		y = body[0].y + unit;
 		body.unshift({x, y});
+		if (collision()){
+			dies();
+		};
 		body.pop();
 	}
 
 	const hasEaten = () => {
 		let food = GameBoard.getFood();
 		if (body[0].x == food.x && body[0].y == food.y){
+			body.push(Object.assign({}, body[0]));
+			GamePlay.updateScore();
 			return true;
 		}
 		else{
@@ -74,11 +88,35 @@ var Snake = (() => {
 		}
 	} 
 
-	const alive = () => {
-		return true;
+	const collision = () => {
+		//hits the walls
+		if (body[0].x == GameBoard.LEFT_WALL || body[0].x == GameBoard.RIGHT_WALL || 
+			body[0].y == GameBoard.BOTTOM_WALL){
+			if (body[0].x == GameBoard.RIGHT_WALL){
+				console.log("collision!");
+			}
+			
+			return true;
+		}
+		//or hits itself
+		for (let i = 0; i < body.length; i++){
+			if (i !== 0 && body[0].x == body[i].x && body[0].y == body[i].y){
+				return true;
+			}
+		}
+		return false;
 	}
 
-	return {body, dir, moveLeft, moveRight, moveDown, moveUp, hasEaten};
+	const isAlive = () => {
+		return living;
+	}
+
+	const dies = () => {
+		console.log("dies");
+		living = false;
+	}
+
+	return {body, dir, moveLeft, moveRight, moveDown, moveUp, hasEaten, isAlive, dies};
 })();
 
 
@@ -135,12 +173,21 @@ var Display = (() => {
 
 		//the snake
 		for (let i = 0; i < Snake.body.length; i++){
+			ctx.lineWidth = 2;
+			ctx.strokeStyle = "black";
+			ctx.strokeRect((Snake.body[i].x - 1), (Snake.body[i].y - 1), (unit + 1), (unit + 1));
 			ctx.fillStyle = "white";
 			ctx.fillRect(Snake.body[i].x, Snake.body[i].y, unit, unit);
 		}
 		
+
 		ctx.fillStyle = foodItem.style;
 		ctx.fillRect(foodItem.x_loc, foodItem.y_loc, unit, unit);
+
+		ctx.fillStyle = "white";
+		ctx.font = "48px serif";
+		let theScore = GamePlay.getScore();
+		ctx.fillText("Score: " + theScore, unit, 2*unit);
 
 	}
 	
@@ -149,6 +196,8 @@ var Display = (() => {
 
 
 var GamePlay = (() => {
+
+	let score = 0;
 
 	const update = () => {
 
@@ -169,13 +218,26 @@ var GamePlay = (() => {
 			GameBoard.newFood();
 		}
 
+		if (!Snake.isAlive()){
+			clearInterval(updateInterval);
+		}
+
 	}
 
-	let score = 0;
-	//update
-	setInterval(update, 150);
-	//render
-	setInterval(Display.draw, 100);
+
+	const updateScore = () => {
+		score++;
+	}
+
+	const getScore = () => {
+		return score;
+	}
 	
+	//update
+	let updateInterval = setInterval(update, 150);
+	//render
+	let drawInterval = setInterval(Display.draw, 100);
+	
+	return {updateScore, getScore};
 	
 })();

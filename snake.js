@@ -3,18 +3,17 @@
 const ctx = document.querySelector("#canvas").getContext("2d");
 const unit = 32;
 
-var Food = () => {
+let Food = () => {
 	let x = Math.floor(Math.random() * (17 - 1) + 2) * unit;
 	let y = Math.floor(Math.random() * (17 - 1) + 3)* unit;
 	return {x, y};
 };
 
-var GameBoard = (() => {
-	const RIGHT_WALL = 17*unit;
+const GameBoard = (() => {
+	const RIGHT_WALL = 18*unit;
 	const LEFT_WALL = 2*unit;
 	const BOTTOM_WALL = 17*unit;
 	const TOP_WALL = 4*unit;
-
 	
 	let foodItem = Food();
 	
@@ -30,7 +29,7 @@ var GameBoard = (() => {
 })();
 
 
-var Snake = (() => {
+const Snake = (() => {
 	let x = 10 * unit;
 	let y = 10 * unit;
 	let dir = "r";
@@ -41,11 +40,11 @@ var Snake = (() => {
 
 	const moveRight = () => {
 		x = body[0].x + unit;
+		console.log("x is: " + x);
+		body.unshift({x, y});
 		if (collision()){
 			dies();
 		}
-		body.unshift({x, y});
-		
 		body.pop();
 	}
 
@@ -89,16 +88,6 @@ var Snake = (() => {
 	} 
 
 	const collision = () => {
-		//hits the walls
-		if (body[0].x == GameBoard.LEFT_WALL || body[0].x == GameBoard.RIGHT_WALL || 
-			body[0].y == GameBoard.BOTTOM_WALL){
-			if (body[0].x == GameBoard.RIGHT_WALL){
-				console.log("collision!");
-			}
-			
-			return true;
-		}
-		//or hits itself
 		for (let i = 0; i < body.length; i++){
 			if (i !== 0 && body[0].x == body[i].x && body[0].y == body[i].y){
 				return true;
@@ -116,7 +105,17 @@ var Snake = (() => {
 		living = false;
 	}
 
-	return {body, dir, moveLeft, moveRight, moveDown, moveUp, hasEaten, isAlive, dies};
+	const reset = () => {
+		body = [];
+		body.unshift({x: 10*unit, y: 10*unit});
+
+		console.log("x is: " + body[0].x);
+		console.log("y is: " + body[0].y);
+		dir = "r";
+		living = true;
+	}
+
+	return {body, dir, moveLeft, moveRight, moveDown, moveUp, hasEaten, isAlive, dies, reset};
 })();
 
 
@@ -126,7 +125,7 @@ var Snake = (() => {
 
 //Controls
 
-var Controls = (() => {
+const Controls = (() => {
 
 	const direction = (event) => {
 		if (event.keyCode == 37 && Snake.dir != "r"){
@@ -150,15 +149,12 @@ var Controls = (() => {
 
 //Display
 
-var Display = (() => {
+const Display = (() => {
 
 	let bg = new Image();
 	bg.src = "./images/background.jpg";
 	
-
-
 	const draw = () => {
-
 		let food = GameBoard.getFood();
 		let foodItem = {
 			style: "red",
@@ -190,24 +186,32 @@ var Display = (() => {
 		ctx.fillText("Score: " + theScore, unit, 2*unit);
 
 	}
+
+	const gameOverDisplay = () => {
+		ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+		ctx.fillRect(0,0,20*unit, 20*unit);
+		ctx.fillStyle = "white";
+		ctx.font = "62px serif";
+		ctx.fillText("GAME OVER", 4*unit, 11*unit);
+	}
 	
-	return {draw};
+	return {draw, gameOverDisplay};
 })();
 
 
-var GamePlay = (() => {
+const GamePlay = (() => {
 
 	let score = 0;
+	let scores = [];
 
 	const update = () => {
-
 		if (Snake.dir == "l" && Snake.body[0].x >= GameBoard.LEFT_WALL){
 			Snake.moveLeft();
 		}
 		else if (Snake.dir == "u" && Snake.body[0].y >= GameBoard.TOP_WALL){
 			Snake.moveUp();
 		}
-		else if (Snake.dir == "r" && Snake.body[0].x <= GameBoard.RIGHT_WALL){
+		else if (Snake.dir == "r" && (Snake.body[0].x + unit) <= GameBoard.RIGHT_WALL){
 			Snake.moveRight();
 		}
 		else if (Snake.dir == "d" && Snake.body[0].y <= GameBoard.BOTTOM_WALL){
@@ -220,6 +224,9 @@ var GamePlay = (() => {
 
 		if (!Snake.isAlive()){
 			clearInterval(updateInterval);
+			clearInterval(drawInterval);
+			Display.gameOverDisplay();
+			uiElements.replayBtn.style.display = "block";
 		}
 
 	}
@@ -232,12 +239,28 @@ var GamePlay = (() => {
 	const getScore = () => {
 		return score;
 	}
+
+	const restartGame = () => {
+		score = 0;
+		Snake.reset();
+		updateInterval = setInterval(update, 150);
+		drawInterval = setInterval(Display.draw, 100);
+		uiElements.replayBtn.style.display = "none";
+	}
 	
 	//update
 	let updateInterval = setInterval(update, 150);
 	//render
 	let drawInterval = setInterval(Display.draw, 100);
 	
-	return {updateScore, getScore};
+	return {updateScore, getScore, restartGame};
 	
+})();
+
+const uiElements = (() => {
+
+	const replayBtn = document.querySelector("#replayButton");
+	replayBtn.addEventListener("click", GamePlay.restartGame);
+
+	return {replayBtn};
 })();

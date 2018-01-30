@@ -10,7 +10,7 @@ let Food = () => {
 };
 
 const GameBoard = (() => {
-	const RIGHT_WALL = 18*unit;
+	const RIGHT_WALL = 17*unit;
 	const LEFT_WALL = 2*unit;
 	const BOTTOM_WALL = 17*unit;
 	const TOP_WALL = 4*unit;
@@ -113,6 +113,7 @@ const Snake = (() => {
 		console.log("y is: " + body[0].y);
 		dir = "r";
 		living = true;
+		return body;
 	}
 
 	return {body, dir, moveLeft, moveRight, moveDown, moveUp, hasEaten, isAlive, dies, reset};
@@ -151,6 +152,7 @@ const Controls = (() => {
 
 const Display = (() => {
 
+	let scoreBoard = document.querySelector("#scoreBoard");
 	let bg = new Image();
 	bg.src = "./images/background.jpg";
 	
@@ -194,8 +196,22 @@ const Display = (() => {
 		ctx.font = "62px serif";
 		ctx.fillText("GAME OVER", 4*unit, 11*unit);
 	}
+
+	const updateScoreBoard = () => {
+		let r = Math.floor(Math.random() * 255);
+		let g = Math.floor(Math.random() * 255);
+		let b = Math.floor(Math.random() * 255);
+
+		let row = document.createElement("TR");
+		row.style.color = "rgb(" + r + "," + g + "," + b + ")";
+		let name = row.insertCell(0);
+		name.innerHTML = uiElements.getPlayerName();
+		let score = row.insertCell(1);
+		score.innerHTML = GamePlay.getScore(); 
+		scoreBoard.appendChild(row);
+	}
 	
-	return {draw, gameOverDisplay};
+	return {draw, gameOverDisplay, updateScoreBoard};
 })();
 
 
@@ -211,7 +227,8 @@ const GamePlay = (() => {
 		else if (Snake.dir == "u" && Snake.body[0].y >= GameBoard.TOP_WALL){
 			Snake.moveUp();
 		}
-		else if (Snake.dir == "r" && (Snake.body[0].x + unit) <= GameBoard.RIGHT_WALL){
+		else if (Snake.dir == "r" && (Snake.body[0].x) <= GameBoard.RIGHT_WALL){
+			console.log("Snake x is: " + Snake.body[0].x);
 			Snake.moveRight();
 		}
 		else if (Snake.dir == "d" && Snake.body[0].y <= GameBoard.BOTTOM_WALL){
@@ -225,6 +242,7 @@ const GamePlay = (() => {
 		if (!Snake.isAlive()){
 			clearInterval(updateInterval);
 			clearInterval(drawInterval);
+			Display.updateScoreBoard();
 			Display.gameOverDisplay();
 			uiElements.replayBtn.style.display = "block";
 		}
@@ -242,7 +260,8 @@ const GamePlay = (() => {
 
 	const restartGame = () => {
 		score = 0;
-		Snake.reset();
+		Snake.body = Snake.reset();
+		uiElements.askPlayerName();
 		updateInterval = setInterval(update, 150);
 		drawInterval = setInterval(Display.draw, 100);
 		uiElements.replayBtn.style.display = "none";
@@ -262,5 +281,25 @@ const uiElements = (() => {
 	const replayBtn = document.querySelector("#replayButton");
 	replayBtn.addEventListener("click", GamePlay.restartGame);
 
-	return {replayBtn};
+	let count = 1;
+	let playerName = "Player " + count;
+	const askPlayerName = () => {
+		let name = prompt("Please enter a name: ", playerName);
+		if (name == ""){
+			playerName = "No one";
+		}
+		else {
+			playerName = name;
+		}
+		count++;
+	}
+
+	const getPlayerName = () => {
+		return playerName;
+	}
+	
+
+	return {replayBtn, getPlayerName, askPlayerName};
 })();
+
+uiElements.askPlayerName();

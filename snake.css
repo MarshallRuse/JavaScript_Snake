@@ -17,3 +17,8 @@
 	left: 250px;
 	display: none;
 }
+
+#scoreTable td {
+	text-align: center;
+	font-weight: bold;
+}
